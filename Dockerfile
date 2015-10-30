@@ -11,6 +11,20 @@ RUN rm -f /etc/localtime && ln -s /usr/share/zoneinfo/America/New_York /etc/loca
 COPY locale /etc/default/locale
 RUN chmod a+r /etc/default/locale
 
+# Install the ppa repo needed for installing Java7
+# http://blog.retep.org/2013/04/13/installing-java-7-on-debian-squeeze/
+
+RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu precise main" | tee -a /etc/apt/sources.list
+RUN echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu precise main" | tee -a /etc/apt/sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886
+
+# Before we install Java, fake out the installer to accept the license
+# Java is in the apt-packages.list below
+# http://askubuntu.com/questions/190582/installing-java-automatically-with-silent-option
+
+RUN echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections
+RUN echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections
+
 # Update everything installed
 RUN apt-get -y update
 RUN apt-get -y upgrade
@@ -21,7 +35,6 @@ RUN chmod +r /tmp/apt-packages.list
 RUN apt-get install -y `cat /tmp/apt-packages.list`
 
 # Install PIP - useful everywhere
-
 RUN /usr/bin/curl -O https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 
@@ -55,9 +68,6 @@ RUN echo "Defaults:$BUILD_USER !requiretty" >> /etc/sudoers
 
 # Add user to sudoers with NOPASSWD
 RUN echo "$BUILD_USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-
-# Install Java
-# TODO
 
 # Install ant
 ENV ANT_VERSION 1.9.5
